@@ -460,6 +460,11 @@ class PreprocessorStage( Stage ):
 		'''
 		kll_file.context.initial_context( kll_file.lines, kll_file.data, kll_file )
 
+	def process_file(self, kll_file, processed_relative_save_path):
+		kll_file.read()
+
+		print(kll_file.data)
+
 	def process( self ):
 		'''
 		Preprocessor Execution
@@ -481,8 +486,16 @@ class PreprocessorStage( Stage ):
 		# This step will change once preprocessor commands have been added
 
 
+
 		# Simply, this just takes the imported file data (KLLFile) and puts it in the context container
 		kll_files = self.control.stage('FileImportStage').kll_files
+
+		preprocessed_kll_files = []
+		for file in kll_files:
+			processed_file = self.process_file(file,
+				"/processed")
+			preprocessed_kll_files.append(processed_file)
+
 		if False in pool.map( self.seed_context, kll_files ):
 			self._status = 'Incomplete'
 			return
@@ -1916,8 +1929,8 @@ class DataAnalysisStage( Stage ):
 		'''
 		super().__init__( control )
 
-		self.data_analysis_debug = False
-		self.data_analysis_display = False
+		self.data_analysis_debug = True
+		self.data_analysis_display = True
 
 		self.trigger_index = []
 		self.result_index = []
