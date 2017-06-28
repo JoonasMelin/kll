@@ -435,6 +435,11 @@ class PreprocessorStage( Stage ):
 		'''
 		super().__init__( control )
 
+		self.max_scan_code = []
+		self.min_scan_code = []
+
+		self.interconnect_scancode_offsets = []
+
 	def command_line_args( self, args ):
 		'''
 		Group parser for command line arguments
@@ -460,10 +465,49 @@ class PreprocessorStage( Stage ):
 		'''
 		kll_file.context.initial_context( kll_file.lines, kll_file.data, kll_file )
 
+	def process_scancodes(self, kll_file):
+		lines = kll_file.data.splitlines()
+		print(self.control.stage)
+
+		# Basic Tokens Spec
+		spec = [
+			( 'Comment',          ( r' *#.*', ) ),
+			( 'Space',            ( r'[ \t]+', ) ),
+			( 'NewLine',          ( r'[\r\n]+', ) ),
+
+			# Tokens that will be grouped together after tokenization
+			# Ignored at this stage
+			# This is required to isolate the Operator tags
+			( 'ScanCode',         ( r'S((0x[0-9a-fA-F]+)|([0-9]+))', ) ),
+			( 'ScanCodeStart',    ( r'S\[', ) ),
+			( 'CodeBegin',        ( r'\[', ) ),
+			( 'CodeEnd',          ( r'\]', ) ),
+
+			( 'Operator',         ( r'=>|<=|i:\+|i:-|i::|i:|:\+|:-|::|:|=', ) ),
+			( 'EndOfLine',        ( r';', ) ),
+
+			# Everything else to be ignored at this stage
+			( 'Misc',             ( r'.', ) ),          # Everything else
+		]
+
+		# Tokens to filter out of the token stream
+		#useless = [ 'Space', 'Comment' ]
+		useless = [ 'Comment', 'NewLine' ]
+
+		# Build tokenizer that appends unknown characters to Misc Token groups
+		# NOTE: This is technically slower processing wise, but allows for multi-stage tokenization
+		#       Which in turn allows for parsing and tokenization rules to be simplified
+		tokenizer = make_tokenizer( spec )
+
+		for line in lines:
+			print(list(tokenizer(line)))
+
+
 	def process_file(self, kll_file, processed_relative_save_path):
 		kll_file.read()
+		self.process_scancodes(kll_file)
 
-		print(kll_file.data)
+
 
 	def process( self ):
 		'''
@@ -484,8 +528,6 @@ class PreprocessorStage( Stage ):
 		# First, since initial contexts have been populated, populate details
 		# TODO
 		# This step will change once preprocessor commands have been added
-
-
 
 		# Simply, this just takes the imported file data (KLLFile) and puts it in the context container
 		kll_files = self.control.stage('FileImportStage').kll_files

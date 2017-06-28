@@ -90,5 +90,21 @@ class KLLFile:
 
 		return True
 
+	def write( self, output_filename):
+		'''
+		Writes the contents to a file
+		This can be useful for dumping processed files to disk
+		'''
+		try:
+			# Read file into memory, removing newlines
+			with open( output_filename ) as f:
+				f.write(self.data)
+
+		except:
+			print( "{0} Failed to write to file '{1}'".format( ERROR, self.path ) )
+			return False
+
+		return True
+
 
 
