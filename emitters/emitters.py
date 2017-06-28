@@ -37,70 +37,70 @@ WARNING = '\033[5;1;33mWARNING\033[0m:'
 ### Classes ###
 
 class Emitters:
-	'''
-	Container class for KLL emitters
+    '''
+    Container class for KLL emitters
 
-	NOTES: To add a new emitter
-	- Add a new directory for your emitter (e.g. kiibohd)
-	- Add at least two files in this directory (<name>.py and __init__.py)
-	- In <name>.py have one class that inherits the Emitter class from common.emitter
-	- Add to list of emitters below
-	- Add import statement to the top of this file
-	- The control object allows access to the entire set of KLL datastructures
-	'''
+    NOTES: To add a new emitter
+    - Add a new directory for your emitter (e.g. kiibohd)
+    - Add at least two files in this directory (<name>.py and __init__.py)
+    - In <name>.py have one class that inherits the Emitter class from common.emitter
+    - Add to list of emitters below
+    - Add import statement to the top of this file
+    - The control object allows access to the entire set of KLL datastructures
+    '''
 
-	def __init__( self, control ):
-		'''
-		Emitter initialization
+    def __init__(self, control):
+        '''
+        Emitter initialization
 
-		@param control: ControlStage object, used to access data from other stages
-		'''
-		# Default emitter
-		self.default = "kiibohd"
+        @param control: ControlStage object, used to access data from other stages
+        '''
+        # Default emitter
+        self.default = "kiibohd"
 
-		# Dictionary of Emitters
-		self.emitters = {
-			'kiibohd' : kiibohd.Kiibohd( control ),
-			'kll'     : kll.KLL( control ),
-			'none'    : none.Drop( control )
-		}
+        # Dictionary of Emitters
+        self.emitters = {
+        'kiibohd': kiibohd.Kiibohd(control),
+        'kll': kll.KLL(control),
+        'none': none.Drop(control)
+        }
 
-	def emitter_default( self ):
-		'''
-		Returns string name of default emitter
-		'''
-		return self.default
+    def emitter_default(self):
+        '''
+        Returns string name of default emitter
+        '''
+        return self.default
 
-	def emitter_list( self ):
-		'''
-		List of emitters available
-		'''
-		return list( self.emitters.keys() )
+    def emitter_list(self):
+        '''
+        List of emitters available
+        '''
+        return list(self.emitters.keys())
 
-	def emitter( self, emitter ):
-		'''
-		Returns an emitter object
-		'''
-		return self.emitters[ emitter ]
+    def emitter(self, emitter):
+        '''
+        Returns an emitter object
+        '''
+        return self.emitters[emitter]
 
-	def command_line_args( self, args ):
-		'''
-		Group parser fan-out for emitter command line arguments
+    def command_line_args(self, args):
+        '''
+        Group parser fan-out for emitter command line arguments
 
-		@param args: Name space of processed arguments
-		'''
-		# Always process command line args in the same order
-		for key, emitter in sorted( self.emitters.items(), key=lambda x: x[0] ):
-			emitter.command_line_args( args )
+        @param args: Name space of processed arguments
+        '''
+        # Always process command line args in the same order
+        for key, emitter in sorted(self.emitters.items(), key=lambda x: x[0]):
+            emitter.command_line_args(args)
 
-	def command_line_flags( self, parser ):
-		'''
-		Group parser fan-out for emitter for command line options
+    def command_line_flags(self, parser):
+        '''
+        Group parser fan-out for emitter for command line options
 
-		@param parser: argparse setup object
-		'''
-		# Always process command line flags in the same order
-		for key, emitter in sorted( self.emitters.items(), key=lambda x: x[0] ):
-			emitter.command_line_flags( parser )
+        @param parser: argparse setup object
+        '''
+        # Always process command line flags in the same order
+        for key, emitter in sorted(self.emitters.items(), key=lambda x: x[0]):
+            emitter.command_line_flags(parser)
 
 

@@ -27,7 +27,7 @@ import re
 
 ### Decorators ###
 
- ## Print Decorator Variables
+## Print Decorator Variables
 ERROR = '\033[5;1;31mERROR\033[0m:'
 WARNING = '\033[5;1;33mWARNING\033[0m:'
 
@@ -36,69 +36,69 @@ WARNING = '\033[5;1;33mWARNING\033[0m:'
 ### Classes ###
 
 class BackendBase:
-	# Default templates and output files
-	templatePaths = []
-	outputPaths = []
+    # Default templates and output files
+    templatePaths = []
+    outputPaths = []
 
-	# Initializes backend
-	# Looks for template file and builds list of fill tags
-	def __init__( self, templatePaths ):
-		# Use defaults if no template is specified
-		if templatePaths is not None:
-			self.templatePaths = templatePaths
+    # Initializes backend
+    # Looks for template file and builds list of fill tags
+    def __init__(self, templatePaths):
+        # Use defaults if no template is specified
+        if templatePaths is not None:
+            self.templatePaths = templatePaths
 
-		self.fill_dict = dict()
+        self.fill_dict = dict()
 
-		# Process each template and add to tagList
-		self.tagList = []
-		for templatePath in self.templatePaths:
-			# Does template exist?
-			if not os.path.isfile( templatePath ):
-				print ( "{0} '{1}' does not exist...".format( ERROR, templatePath ) )
-				sys.exit( 1 )
+        # Process each template and add to tagList
+        self.tagList = []
+        for templatePath in self.templatePaths:
+            # Does template exist?
+            if not os.path.isfile(templatePath):
+                print("{0} '{1}' does not exist...".format(ERROR, templatePath))
+                sys.exit(1)
 
-			# Generate list of fill tags
-			with open( templatePath, 'r' ) as openFile:
-				for line in openFile:
-					match = re.findall( '<\|([^|>]+)\|>', line )
-					for item in match:
-						self.tagList.append( item )
-
-
-	# USB Code Capability Name
-	# XXX Make sure to override
-	def usbCodeCapability( self ):
-		return "my_capability";
+            # Generate list of fill tags
+            with open(templatePath, 'r') as openFile:
+                for line in openFile:
+                    match = re.findall('<\|([^|>]+)\|>', line)
+                    for item in match:
+                        self.tagList.append(item)
 
 
-	# Processes content for fill tags and does any needed dataset calculations
-	# XXX Make sure to override
-	def process( self, capabilities, macros, variables, gitRev, gitChanges ):
-		print ( "{0} BackendBase 'process' function must be overridden".format( ERROR ) )
-		sys.exit( 2 )
+    # USB Code Capability Name
+    # XXX Make sure to override
+    def usbCodeCapability(self):
+        return "my_capability";
 
 
-	# Generates the output keymap with fill tags filled
-	def generate( self, outputPaths ):
-		# Use default if not specified
-		if outputPaths is None:
-			outputPaths = self.outputPaths
+    # Processes content for fill tags and does any needed dataset calculations
+    # XXX Make sure to override
+    def process(self, capabilities, macros, variables, gitRev, gitChanges):
+        print("{0} BackendBase 'process' function must be overridden".format(ERROR))
+        sys.exit(2)
 
-		for templatePath, outputPath in zip( self.templatePaths, outputPaths ):
-			# Process each line of the template, outputting to the target path
-			with open( outputPath, 'w' ) as outputFile:
-				with open( templatePath, 'r' ) as templateFile:
-					for line in templateFile:
-						# TODO Support multiple replacements per line
-						# TODO Support replacement with other text inline
-						match = re.findall( '<\|([^|>]+)\|>', line )
 
-						# If match, replace with processed variable
-						if match:
-							outputFile.write( self.fill_dict[ match[ 0 ] ] )
-							outputFile.write("\n")
+    # Generates the output keymap with fill tags filled
+    def generate(self, outputPaths):
+        # Use default if not specified
+        if outputPaths is None:
+            outputPaths = self.outputPaths
 
-						# Otherwise, just append template to output file
-						else:
-							outputFile.write( line )
+        for templatePath, outputPath in zip(self.templatePaths, outputPaths):
+            # Process each line of the template, outputting to the target path
+            with open(outputPath, 'w') as outputFile:
+                with open(templatePath, 'r') as templateFile:
+                    for line in templateFile:
+                        # TODO Support multiple replacements per line
+                        # TODO Support replacement with other text inline
+                        match = re.findall('<\|([^|>]+)\|>', line)
+
+                        # If match, replace with processed variable
+                        if match:
+                            outputFile.write(self.fill_dict[match[0]])
+                            outputFile.write("\n")
+
+                        # Otherwise, just append template to output file
+                        else:
+                            outputFile.write(line)
 

@@ -69,8 +69,8 @@ class Token(object):
 
     def pformat(self):
         return "%s %s '%s'" % (self._pos_str().ljust(20),
-                                self.type.ljust(14),
-                                self.value)
+                               self.type.ljust(14),
+                               self.value)
 
 
 def make_tokenizer(specs):
@@ -114,7 +114,7 @@ def make_tokenizer(specs):
 # This is an example of a token spec. See also [this article][1] for a
 # discussion of searching for multiline comments using regexps (including `*?`).
 #
-#   [1]: http://ostermiller.org/findcomment.html
+# [1]: http://ostermiller.org/findcomment.html
 _example_token_specs = [
     ('COMMENT', (r'\(\*(.|[\r\n])*?\*\)', re.MULTILINE)),
     ('COMMENT', (r'\{(.|[\r\n])*?\}', re.MULTILINE)),

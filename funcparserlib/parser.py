@@ -125,7 +125,7 @@ class Parser(object):
             # Truncate at 500 characters
             # Any longer isn't that useful and makes the output hard to read
             output = 'trying %s' % self.name
-            if len( output ) > 500:
+            if len(output) > 500:
                 output = output[:250] + '   ... [truncated] ...   ' + output[-250:]
             log.debug(output)
         return self._run(tokens, s)
@@ -268,7 +268,7 @@ class NoParseError(Exception):
     def __init__(self, msg='', state=None, token=None):
         self.msg = msg
         self.state = state
-        self.token = token # Next token
+        self.token = token  # Next token
 
     def __str__(self):
         return self.msg
@@ -431,4 +431,5 @@ def forward_decl():
 
 if __name__ == '__main__':
     import doctest
+
     doctest.testmod()

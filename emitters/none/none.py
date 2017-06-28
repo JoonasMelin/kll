@@ -33,44 +33,44 @@ WARNING = '\033[5;1;33mWARNING\033[0m:'
 
 ### Classes ###
 
-class Drop( Emitter ):
-	'''
-	Doesn't emit at all, just ignores everything
-	'''
+class Drop(Emitter):
+    '''
+    Doesn't emit at all, just ignores everything
+    '''
 
-	def __init__( self, control ):
-		'''
-		Emitter initialization
+    def __init__(self, control):
+        '''
+        Emitter initialization
 
-		@param control: ControlStage object, used to access data from other stages
-		'''
-		Emitter.__init__( self, control )
+        @param control: ControlStage object, used to access data from other stages
+        '''
+        Emitter.__init__(self, control)
 
-	def command_line_args( self, args ):
-		'''
-		Group parser for command line arguments
+    def command_line_args(self, args):
+        '''
+        Group parser for command line arguments
 
-		@param args: Name space of processed arguments
-		'''
+        @param args: Name space of processed arguments
+        '''
 
-	def command_line_flags( self, parser ):
-		'''
-		Group parser for command line options
+    def command_line_flags(self, parser):
+        '''
+        Group parser for command line options
 
-		@param parser: argparse setup object
-		'''
+        @param parser: argparse setup object
+        '''
 
-	def output( self ):
-		'''
-		Final Stage of Emitter
+    def output(self):
+        '''
+        Final Stage of Emitter
 
-		Nothing to do
-		'''
+        Nothing to do
+        '''
 
-	def process( self ):
-		'''
-		Emitter Processing
+    def process(self):
+        '''
+        Emitter Processing
 
-		Nothing to do, just dropping all the results
-		'''
+        Nothing to do, just dropping all the results
+        '''
 
