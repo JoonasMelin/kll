@@ -458,18 +458,6 @@ class PreprocessorStage(Stage):
             ( 'Misc', ( r'.', ) ),  # Everything else
         ]
 
-    ''' usefull_tokens = []
-            for element in token_line_obj:
-                if element.type in usefull:
-                    usefull_tokens.append(element)
-
-            for current_token in usefull_tokens:
-                if current_token.type == "Name" and current_token.value == "ConnectId":
-                    print("%s : %s" % (current_token.type, current_token.value))
-
-                    print("\n\n")
-    '''
-
     def command_line_args(self, args):
         '''
         Group parser for command line arguments
@@ -520,6 +508,7 @@ class PreprocessorStage(Stage):
 
         try:
             most_recent_connect_id = 0
+            most_recent_offset = 0
             processed_lines = []
             for line in lines:
                 tokens = [x for x in tokenizer(line) if x.type not in useless]
@@ -527,6 +516,17 @@ class PreprocessorStage(Stage):
                 for r_element, mid_element, l_element in zip(tokens[0::3], tokens[1::3], tokens[2::3]):
                     print("%s | %s | %s" % (r_element.value, mid_element.value, l_element.value))
                     print("%s | %s | %s\n" % (r_element.type, mid_element.type, l_element.type))
+
+                    # Preprocessor tag for offsetting the scancodes by a fixed amount
+                    # This makes it eay to apply offsets to older files
+                    # The scope for this term is for the current file
+                    if (r_element.value == "ScanCodeOffset" and
+                                mid_element.value == "=" and
+                                l_element.type == "NumberBase10"):
+                        most_recent_offset = int(l_element.value)
+
+                    # Preprocessor definition for the connectId
+                    # TODO these should likely be defined in their own file somewhere else
                     if (r_element.value == "ConnectId" and
                                 mid_element.value == "=" and
                                 l_element.type == "NumberBase10"):
@@ -564,12 +564,17 @@ class PreprocessorStage(Stage):
                                 self.max_scan_code[most_recent_connect_id] = scan_code_int
 
                         if apply_offsets:
-                            # Modifying the current line
                             print("Applying offset %s" % self.interconnect_scancode_offsets[most_recent_connect_id])
-                            scancode_with_offset = scan_code_int + \
-                                                   self.interconnect_scancode_offsets[most_recent_connect_id]
-                            scancode_with_offset_hex = "0x{:02x}".format(scancode_with_offset)
-                            original_scancode_converted_hex = "0x{:02x}".format(scan_code_int)
+                            
+                            # Modifying the current line
+                            # The result is determined by the scancode, the interconnect offset and the preprocess
+                            # term for offset
+                            scan_code_with_offset = scan_code_int + \
+                                                    self.interconnect_scancode_offsets[most_recent_connect_id] + \
+                                                    most_recent_offset
+
+                            scan_code_with_offset_hex = "0x{:02X}".format(scan_code_with_offset)
+                            original_scancode_converted_hex = "0x{:02X}".format(scan_code_int)
 
                             # Sanity checking if we are doing something wrong
                             if original_scancode_converted_hex != r_element.value[1:]:
@@ -578,9 +583,10 @@ class PreprocessorStage(Stage):
                                       " the converted code {2}".format(ERROR,
                                                                        r_element.value[1:],
                                                                        original_scancode_converted_hex))
-                            print("Old line: %s\n Replacing %s with %s" % (line, r_element.value[1:], scancode_with_offset_hex))
+                                
+                            print("Old line: %s\n Replacing %s with %s" % (line, r_element.value[1:], scan_code_with_offset_hex))
                             # Replacing the original scancode in the line
-                            line = line.replace(r_element.value[1:], scancode_with_offset_hex)
+                            line = line.replace(r_element.value[1:], scan_code_with_offset_hex)
                             print("new line: %s" % line)
 
                 processed_lines.append(line)
@@ -594,6 +600,7 @@ class PreprocessorStage(Stage):
                 err.place[0],
             ))
 
+        # Applying the offsets to the kll objets, if appropriate
         if apply_offsets:
             new_data = os.linesep.join(processed_lines)
 
@@ -686,6 +693,9 @@ class PreprocessorStage(Stage):
         # NOTE: This may result in having to create more KLL Contexts and tokenize/parse again numerous times over
         # TODO
 
+        print("Preprocessor determined Min ScanCodes: {0}".format(self.min_scan_code))
+        print("Preprocessor determined Max ScanCodes: {0}".format(self.max_scan_code))
+        print("Preprocessor determined ScanCode offsets: {0}".format(self.interconnect_scancode_offsets))
         self._status = 'Completed'
 
 
@@ -2113,6 +2123,7 @@ class DataAnalysisStage(Stage):
         '''
         super().__init__(control)
 
+        # FIXME Remove debug
         self.data_analysis_debug = True
         self.data_analysis_display = True
 
@@ -2124,6 +2135,7 @@ class DataAnalysisStage(Stage):
         self.result_index = []
         self.trigger_lists = []
 
+        # NOTE Interconnect offsets are determined in the preprocessor stage
         self.max_scan_code = []
         self.min_scan_code = []
 
@@ -2288,6 +2300,9 @@ class DataAnalysisStage(Stage):
         '''
         Generates list of offsets for each of the interconnect ids
         '''
+        print("{0} This functionality is handled by the preprocessor".format(ERROR))
+        # FIXME Should this me removed entirely?
+        return
         maxscancode = {}
         maxpixelid = {}
         for index, layer in enumerate(self.reduced_contexts):
@@ -2593,7 +2608,8 @@ class DataAnalysisStage(Stage):
 
         # Generate Offset Table
         # This is needed for interconnect devices
-        self.generate_map_offset_table()
+        # FIXME Removed as this is handled by the preprocessor
+        # self.generate_map_offset_table()
 
         # Generate Trigger Lists
         self.generate_trigger_lists()
@@ -2609,6 +2625,11 @@ class DataAnalysisStage(Stage):
         Data Analysis Stage Processing
         '''
         self._status = 'Running'
+
+        self.max_scan_code = self.control.stage('PreprocessorStage').max_scan_code
+        self.min_scan_code = self.control.stage('PreprocessorStage').min_scan_code
+
+        self.interconnect_scancode_offsets = self.control.stage('PreprocessorStage').interconnect_scancode_offsets
 
         # Determine colorization setting
         self.color = self.control.stage('CompilerConfigurationStage').color
