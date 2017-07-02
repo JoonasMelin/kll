@@ -21,6 +21,7 @@ KLL File Container
 ### Imports ###
 
 import os
+import sys
 
 import common.context as context
 
@@ -74,6 +75,10 @@ class KLLFile:
 
         return exists
 
+    def filename(self):
+        filename = str(os.path.basename(self.path))
+        return filename
+
     def read(self):
         '''
         Read the contents of the file path into memory
@@ -98,11 +103,12 @@ class KLLFile:
         '''
         try:
             # Read file into memory, removing newlines
-            with open(output_filename) as f:
+            print("Writing to {0}".format(output_filename))
+            with open(output_filename, 'w') as f:
                 f.write(self.data)
 
         except:
-            print("{0} Failed to write to file '{1}'".format(ERROR, self.path))
+            print("{0} Failed to write to file '{1}'. Exception: {2}".format(ERROR, output_filename, sys.exc_info()))
             return False
 
         return True

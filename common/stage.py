@@ -442,6 +442,34 @@ class PreprocessorStage(Stage):
 
         self.interconnect_scancode_offsets = []
 
+        # Basic Tokens Spec
+        spec = [
+            ( 'Comment', ( r' *#.*', )),
+            # Ignored at this stage  # This is required to isolate the Operator tags
+            ( 'ScanCode', ( r'S((0x[0-9a-fA-F]+)|([0-9]+))', ) ),
+            ( 'ScanCodeStart', ( r'S\[', )),
+            ( 'USBCode', ( r'U(("[^"]+")|(0x[0-9a-fA-F]+)|([0-9]+))', ) ),
+            ( 'USBCodeStart', ( r'U\[', ) ),
+            ( 'CodeBegin', ( r'\[', )),
+            ( 'CodeEnd', ( r'\]', )),
+            ( 'Name', ( r'[A-Za-z_][A-Za-z_0-9]*', ) ),
+            ( 'Operator', ( r'=>|<=|i:\+|i:-|i::|i:|:\+|:-|::|:|=', ) ),
+            ( 'Number', ( r'-?(0x[0-9a-fA-F]+)|(0|([1-9][0-9]*))', ) ),
+            ( 'Misc', ( r'.', ) ),  # Everything else
+        ]
+
+    ''' usefull_tokens = []
+            for element in token_line_obj:
+                if element.type in usefull:
+                    usefull_tokens.append(element)
+
+            for current_token in usefull_tokens:
+                if current_token.type == "Name" and current_token.value == "ConnectId":
+                    print("%s : %s" % (current_token.type, current_token.value))
+
+                    print("\n\n")
+    '''
+
     def command_line_args(self, args):
         '''
         Group parser for command line arguments
@@ -467,42 +495,85 @@ class PreprocessorStage(Stage):
         '''
         kll_file.context.initial_context(kll_file.lines, kll_file.data, kll_file)
 
-    def process_scancodes(self, kll_file):
+    def process_connect_ids(self, kll_file):
         lines = kll_file.data.splitlines()
         print(self.control.stage)
 
         # Basic Tokens Spec
         spec = [
-            ( 'Comment', ( r' *#.*', ) ),
-            ( 'Space', ( r'[ \t]+', ) ),
-            ( 'NewLine', ( r'[\r\n]+', ) ),  # Tokens that will be grouped together after tokenization
-            # Ignored at this stage  # This is required to isolate the Operator tags
             ( 'ScanCode', ( r'S((0x[0-9a-fA-F]+)|([0-9]+))', ) ),
-            ( 'ScanCodeStart', ( r'S\[', ) ),
-            ( 'CodeBegin', ( r'\[', ) ),
-            ( 'CodeEnd', ( r'\]', ) ),
-
             ( 'Operator', ( r'=>|<=|i:\+|i:-|i::|i:|:\+|:-|::|:|=', ) ),
-            ( 'EndOfLine', ( r';', ) ),  # Everything else to be ignored at this stage
+            ( 'USBCode', ( r'U(("[^"]+")|(0x[0-9a-fA-F]+)|([0-9]+))', ) ),
+            ( 'NumberBase10', ( r'(([1-9][0-9]*))', ) ),
+            ( 'Number', ( r'-?(0x[0-9a-fA-F]+)|(0|([1-9][0-9]*))', ) ),
+            ( 'Name', ( r'[A-Za-z_][A-Za-z_0-9]*', ) ),
             ( 'Misc', ( r'.', ) ),  # Everything else
         ]
 
         # Tokens to filter out of the token stream
         # useless = [ 'Space', 'Comment' ]
-        useless = ['Comment', 'NewLine']
+        useless = ['Misc']
 
         # Build tokenizer that appends unknown characters to Misc Token groups
         # NOTE: This is technically slower processing wise, but allows for multi-stage tokenization
         # Which in turn allows for parsing and tokenization rules to be simplified
         tokenizer = make_tokenizer(spec)
+        mid_tokenizer = make_tokenizer(mid_spec)
+        r_tokenizer = make_tokenizer(r_spec)
 
+        try:
+            for line in lines:
+                l_tokens = [x for x in l_tokenizer(line) if x.type not in useless]
+                mid_tokens = [x for x in mid_tokenizer(line) if x.type not in useless]
+                r_tokens = [x for x in r_tokenizer(line) if x.type not in useless]
+
+                for r_element, mid_element, l_element in zip(l_tokens, mid_tokens, r_tokens):
+                    print("%s | %s | %s" % (r_element.value, mid_element.value, l_element.value))
+                    print("%s | %s | %s\n" % (r_element.type, mid_element.type, l_element.type))
+                    if (r_element.value == "ConnectId" and
+                                mid_element.value == "=" and
+                                l_element.type == "NumberBase10"):
+                        print("Found connect ID!")
+
+                    if (r_element.type == "ScanCode" and
+                                mid_element.value == ":" and
+                                l_element.type == "USBCode"):
+                        print("Scan: %s" % l_element.value)
+        except LexerError as err:
+            print(err)
+            print("{0} {1}:tokenize -> {2}:{3}".format(
+                ERROR,
+                self.__class__.__name__,
+                kll_file.path,
+                err.place[0],
+            ))
+
+        processed_lines = []
         for line in lines:
-            print(list(tokenizer(line)))
+            l_token_line = l_tokenizer(line)
+
+            processed_lines.append(line)
+
+        new_data = os.linesep.join(processed_lines)
+
+        kll_file.data = new_data
+        kll_file.lines = processed_lines
+
+        print(new_data)
 
 
     def process_file(self, kll_file, processed_relative_save_path):
         kll_file.read()
-        self.process_scancodes(kll_file)
+        self.process_connect_ids(kll_file)
+
+        # Outputting the file to disk, with a different filename
+        base_filename = kll_file.filename()
+        [filename, extension] = base_filename.split(".")
+        processed_filename = "{0}_processed.{1}".format(filename, extension)
+        print("processedname: %s" % processed_filename)
+        output_filename = '/home/archScifi/workspace/controller/Keyboards/processed/{0}'.format(processed_filename)
+        kll_file.write(output_filename)
+        kll_file.path = output_filename
 
 
     def process(self):
@@ -2239,7 +2310,7 @@ class DataAnalysisStage(Stage):
         pixel_indices_filtered = list(filter(lambda x: not isinstance(x.position, list), pixel_indices.data.values()))
         # print( list( pixel_indices_filtered ) )
         # for item in list( pixel_indices_filtered ):
-        #	print( item )
+        # print( item )
         physical = scancode_physical.data.copy()
         physical.update(pixel_physical.data)
 
