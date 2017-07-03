@@ -531,9 +531,7 @@ class PreprocessorStage(Stage):
                                 mid_element.value == "=" and
                                 l_element.type == "NumberBase10"):
 
-                        # NOTE Since python indexes from zero, and connect IDs start from 1
-                        # FIXME If this is not the case, please remove the offset
-                        most_recent_connect_id = int(l_element.value) - 1
+                        most_recent_connect_id = int(l_element.value)
                         assert (most_recent_connect_id >= 0)
                         print("Found connect ID! %s" % most_recent_connect_id)
 
